@@ -2,38 +2,80 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Curso NR06 - Gomes Treinamento</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Curso NR06</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      padding: 40px;
-      background-color: #f5f5f5;
+      background-color: #f0f2f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      text-align: center;
     }
     .container {
       background: white;
       padding: 30px;
       border-radius: 10px;
-      max-width: 800px;
-      margin: auto;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .erro {
+      color: red;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <script>
-    const cursoAutorizado = "NR06";
-    const usuario = localStorage.getItem("usuarioLogado");
-    const curso = localStorage.getItem("cursoLogado");
-
-    if (!usuario || curso !== cursoAutorizado) {
-      window.location.href = "https://seu-link-de-login.vercel.app"; // coloque o link da página de login aqui
-    }
-  </script>
-
-  <div class="container">
+  <div class="container" id="conteudo-curso" style="display:none;">
     <h1>Bem-vindo ao curso NR06 🎓</h1>
-    <p>Este conteúdo é exclusivo para alunos logados. Aqui você pode inserir vídeos, PDFs, links, e muito mais.</p>
+    <p>Conteúdo do curso aqui...</p>
   </div>
-</body>
-</html>
+
+  <div class="container" id="erro-acesso" style="display:none;">
+    <h2>Acesso negado 🚫</h2>
+    <p class="erro">Você não está autorizado a acessar este curso.<br>Faça o login corretamente na página inicial.</p>
+  </div>
+
+  <script>
+    const PLANILHA_ID = "1d1UTyY3dAHsTHlajeGkESUDH2bZMUTAhEhDCD6kE7e4";
+    const ABA = "Liberação_curso";
+    const CURSO = "NR06";
+
+    const usuario = localStorage.getItem('usuarioLogado');
+    const curso = localStorage.getItem('cursoLogado');
+
+    async function verificarAutorizacao() {
+      if (!usuario || curso !== CURSO) {
+        document.getElementById("erro-acesso").style.display = "block";
+        return;
+      }
+
+      try {
+        const url = `https://opensheet.elk.sh/${PLANILHA_ID}/${ABA}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Erro ao buscar planilha');
+        const dados = await res.json();
+
+        const autorizado = dados.some(pessoa => {
+          const nome = pessoa["Nome Completo"]?.trim().toLowerCase();
+          const cpf = pessoa["CPF"]?.trim();
+          const cursoPlanilha = pessoa["Curso"]?.trim().toUpperCase();
+          if (!nome || !cpf || !cursoPlanilha) return false;
+
+          const partes = nome.split(' ');
+          const nomeUsuario = `${partes[0]}.${partes[partes.length - 1]}`.toLowerCase();
+
+          return nomeUsuario === usuario && cursoPlanilha === CURSO;
+        });
+
+        if (autorizado) {
+          document.getElementById("conteudo-curso").style.display = "block";
+        } else {
+          document.getElementById("erro-acesso").style.display = "block";
+        }
+      } catch (erro) {
+        console.error(erro);
+        document.getElementById("er
